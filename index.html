@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Transfer with Telegram Red Envelope</title>
+    <style>
+        :root {
+            --telegram-blue: #0088cc;
+            --telegram-light-blue: #64baf0;
+            --telegram-dark-blue: #006699;
+            --telegram-bg: #f5f5f5;
+            --telegram-message-bg: #ffffff;
+            --telegram-sent-message: #e3f2fd;
+            --telegram-red: #ff3b30;
+            --telegram-green: #25D366;
+            --telegram-gray: #8e8e93;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: var(--telegram-bg);
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .step {
+            display: none;
+            background-color: var(--telegram-message-bg);
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .step.active {
+            display: block;
+        }
+        
+        h1, h2 {
+            color: var(--telegram-blue);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        .header img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--telegram-blue);
+            outline: none;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group label {
+            margin-left: 10px;
+            margin-bottom: 0;
+        }
+        
+        .red-envelope-group {
+            display: none;
+            padding: 15px;
+            background-color: #fff8f8;
+            border: 1px solid #ffdddd;
+            border-radius: 8px;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--telegram-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: var(--telegram-dark-blue);
+        }
+        
+        .btn:disabled {
+            background-color: var(--telegram-gray);
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            color: var(--telegram-red);
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        /* Telegram Chat Styling */
+        .telegram-chat {
+            background-color: var(--telegram-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            background-color: var(--telegram-blue);
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .chat-header h3 {
+            margin-left: 10px;
+        }
+        
+        .chat-members {
+            display: flex;
+            margin-left: 10px;
+        }
+        
+        .avatar {
+            width: 20px;
+            height: 20px;
+            background-color: var(--telegram-light-blue);
+            border-radius: 50%;
+            margin-left: -5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .chat-body {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            position: relative;
+        }
+        
+        .message.received {
+            align-self: flex-start;
+            background-color: var(--telegram-message-bg);
+        }
+        
+        .message.sent {
+            align-self: flex-end;
+            background-color: var(--telegram-sent-message);
+        }
+        
+        .message .sender {
+            font-weight: bold;
+            color: var(--telegram-blue);
+            margin-bottom: 3px;
+        }
+        
+        .message .time {
+            font-size: 11px;
+            color: var(--telegram-gray);
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+        }
+        
+        .money-transfer-message {
+            background-color: #FFEFEF !important;
+            border: 1px solid #FFD6D6;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .money-transfer-message:hover {
+            background-color: #FFE0E0 !important;
+        }
+        
+        .money-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: var(--telegram-red);
+        }
+        
+        .money-amount {
+            font-weight: bold;
+            color: var(--telegram-red);
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .money-description {
+            margin-bottom: 15px;
+        }
+        
+        .money-receipt {
+            display: none;
+            padding: 10px;
+            background-color: #F0FFF0;
+            border: 1px solid #CCFFCC;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .money-receipt .amount {
+            font-weight: bold;
+            color: var(--telegram-green);
+            font-size: 18px;
+        }
+        
+        .chat-input {
+            padding: 15px;
+            display: flex;
+            background-color: white;
+            border-top: 1px solid #eee;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+        
+        .chat-input button {
+            background-color: var(--telegram-blue);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            cursor: pointer;
+        }
+        
+        .red-envelope-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--telegram-red);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            margin-right: 15px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="background-color: var(--telegram-blue); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                <span style="color: white; font-size: 20px;">₮</span>
+            </div>
+            <h1>Money Transfer</h1>
+        </div>
+        
+        <!-- Step 1: Money Transfer Form -->
+        <div class="step active" id="step1">
+            <h2>Set Transfer Details</h2>
+            <div class="form-group">
+                <label for="amount">Amount (5-5000 EUR)</label>
+                <input type="number" id="amount" class="form-control" min="5" max="5000" placeholder="Enter amount" required>
+                <div class="error-message" id="amount-error">Please enter an amount between 5 and 5000 EUR.</div>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="red-envelope" class="form-control" style="width: auto;">
+                <label for="red-envelope">Red Envelope (split money in Telegram chat)</label>
+            </div>
+            
+            <div class="red-envelope-group" id="red-envelope-group">
+                <div class="form-group">
+                    <label for="per-user-amount">How Much Each User Receives</label>
+                    <input type="number" id="per-user-amount" class="form-control" placeholder="Amount per user" min="1">
+                    <div class="error-message" id="per-user-error">The amount per user cannot exceed the total amount.</div>
+                </div>
+                <p id="max-users-info" style="font-size: 14px; color: var(--telegram-gray);">This will be split among a maximum of 0 users.</p>
+            </div>
+            
+            <button class="btn" id="next-btn" disabled>Next Step</button>
+        </div>
+        
+        <!-- Step 2: Telegram Chat Simulation -->
+        <div class="step" id="step2">
+            <h2>Transfer Preview</h2>
+            <div class="telegram-chat">
+                <div class="chat-header">
+                    <div class="red-envelope-icon">💸</div>
+                    <div>
+                        <h3>Money Transfer Demo</h3>
+                        <div class="chat-members">
+                            <div class="avatar" style="background-color: #4CAF50;">A</div>
+                            <div class="avatar" style="background-color: #2196F3;">B</div>
+                            <div class="avatar" style="background-color: #FFC107;">C</div>
+                            <div class="avatar" style="background-color: #9C27B0;">D</div>
+                            <div class="avatar" style="background-color: #F44336;">+</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-body" id="chat-body">
+                    <div class="message received">
+                        <div class="sender">Alice</div>
+                        Hello everyone! How are you doing?
+                        <div class="time">10:23</div>
+                    </div>
+                    
+                    <div class="message sent">
+                        <div class="sender">You</div>
+                        I'm doing great, thanks for asking!
+                        <div class="time">10:24</div>
+                    </div>
+                    
+                    <div class="message received">
+                        <div class="sender">Bob</div>
+                        Just finished my project. So relieved!
+                        <div class="time">10:26</div>
+                    </div>
+                    
+                    <div class="message received">
+                        <div class="sender">Charlie</div>
+                        Congratulations Bob! That's awesome.
+                        <div class="time">10:27</div>
+                    </div>
+                    
+                    <div class="message received money-transfer-message" id="money-message">
+                        <div class="sender">Money Transfer</div>
+                        <div class="money-icon">🧧</div>
+                        <div class="money-amount" id="total-amount-display">0 EUR</div>
+                        <div class="money-description" id="money-description">Click to collect your share!</div>
+                        <div class="time">Just now</div>
+                        
+                        <div class="money-receipt" id="money-receipt">
+                            <div>You received</div>
+                            <div class="amount" id="received-amount">0 EUR</div>
+                            <div>from the Red Envelope!</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-input">
+                    <input type="text" placeholder="Type a message...">
+                    <button>➤</button>
+                </div>
+            </div>
+            
+            <button class="btn" id="back-btn" style="margin-top: 20px; background-color: var(--telegram-gray);">Back to Transfer Settings</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const amountInput = document.getElementById('amount');
+        const redEnvelopeCheckbox = document.getElementById('red-envelope');
+        const redEnvelopeGroup = document.getElementById('red-envelope-group');
+        const perUserAmountInput = document.getElementById('per-user-amount');
+        const maxUsersInfo = document.getElementById('max-users-info');
+        const nextBtn = document.getElementById('next-btn');
+        const backBtn = document.getElementById('back-btn');
+        const amountError = document.getElementById('amount-error');
+        const perUserError = document.getElementById('per-user-error');
+        const moneyMessage = document.getElementById('money-message');
+        const totalAmountDisplay = document.getElementById('total-amount-display');
+        const moneyDescription = document.getElementById('money-description');
+        const moneyReceipt = document.getElementById('money-receipt');
+        const receivedAmount = document.getElementById('received-amount');
+        
+        // Variables to store user inputs
+        let totalAmount = 0;
+        let isRedEnvelope = false;
+        let perUserAmount = 0;
+        let maxUsers = 0;
+        let hasCollected = false;
+        
+        // Validation Functions
+        function validateAmount() {
+            const amount = parseFloat(amountInput.value);
+            if (isNaN(amount) || amount < 5 || amount > 5000) {
+                amountError.style.display = 'block';
+                return false;
+            } else {
+                amountError.style.display = 'none';
+                totalAmount = amount;
+                return true;
+            }
+        }
+        
+        function validatePerUserAmount() {
+            if (!isRedEnvelope) return true;
+            
+            const amount = parseFloat(perUserAmountInput.value);
+            if (isNaN(amount) || amount <= 0 || amount > totalAmount) {
+                perUserError.style.display = 'block';
+                return false;
+            } else {
+                perUserError.style.display = 'none';
+                perUserAmount = amount;
+                maxUsers = Math.floor(totalAmount / perUserAmount);
+                maxUsersInfo.textContent = `This will be split among a maximum of ${maxUsers} users.`;
+                return true;
+            }
+        }
+        
+        function updateNextButtonState() {
+            const isAmountValid = validateAmount();
+            const isPerUserValid = validatePerUserAmount();
+            nextBtn.disabled = !(isAmountValid && isPerUserValid);
+        }
+        
+        // Event Listeners
+        amountInput.addEventListener('input', () => {
+            validateAmount();
+            validatePerUserAmount();
+            updateNextButtonState();
+        });
+        
+        redEnvelopeCheckbox.addEventListener('change', () => {
+            isRedEnvelope = redEnvelopeCheckbox.checked;
+            redEnvelopeGroup.style.display = isRedEnvelope ? 'block' : 'none';
+            validatePerUserAmount();
+            updateNextButtonState();
+        });
+        
+        perUserAmountInput.addEventListener('input', () => {
+            validatePerUserAmount();
+            updateNextButtonState();
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            // Update Step 2 with values from Step 1
+            totalAmountDisplay.textContent = `${totalAmount.toFixed(2)} EUR`;
+            
+            if (isRedEnvelope) {
+                moneyDescription.textContent = `Red Envelope: Click to collect ${perUserAmount.toFixed(2)} EUR!`;
+            } else {
+                moneyDescription.textContent = `You received a money transfer!`;
+            }
+            
+            // Show Step 2
+            step1.classList.remove('active');
+            step2.classList.add('active');
+            
+            // Add pulse animation to money message
+            moneyMessage.classList.add('pulse');
+        });
+        
+        backBtn.addEventListener('click', () => {
+            // Go back to Step 1
+            step2.classList.remove('active');
+            step1.classList.add('active');
+            
+            // Reset money receipt
+            moneyReceipt.style.display = 'none';
+            hasCollected = false;
+            moneyMessage.classList.add('pulse');
+        });
+        
+        moneyMessage.addEventListener('click', () => {
+            if (!hasCollected) {
+                moneyMessage.classList.remove('pulse');
+                moneyReceipt.style.display = 'block';
+                receivedAmount.textContent = isRedEnvelope ? 
+                    `${perUserAmount.toFixed(2)} EUR` : 
+                    `${totalAmount.toFixed(2)} EUR`;
+                hasCollected = true;
+            }
+        });
+        
+        // Initialize
+        validateAmount();
+        updateNextButtonState();
+    </script>
+</body>
+</html>
